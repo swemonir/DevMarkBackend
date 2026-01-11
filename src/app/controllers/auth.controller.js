@@ -22,9 +22,14 @@ const signup = async (req, res) => {
 
     return res.status(201).json({
       message: "User registered successfully",
+      user,
     });
   } catch (err) {
-    res.status(500).json({ message: "Signup failed" });
+    console.error("SIGNUP ERROR 👉", err);
+    res.status(500).json({
+      message: "Signup failed",
+      error: err.message,
+    });
   }
 };
 
@@ -38,7 +43,12 @@ const login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const isMatch = await user.comparePassword(password);
+    const isMatch = await new Promise((resolve, reject) => {
+      user.comparePassword(password, (err, isMatch) => {
+        if (err) return reject(err);
+        resolve(isMatch);
+      });
+    });
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
@@ -73,5 +83,5 @@ const login = async (req, res) => {
 
 module.exports = {
   signup,
-  login
+  login,
 };

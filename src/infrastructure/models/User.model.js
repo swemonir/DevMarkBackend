@@ -38,15 +38,23 @@ const userSchema = new mongoose.Schema(
 );
 
 /* 🔐 Hash password */
-userSchema.pre("save", async function (next) {
+userSchema.pre("save", function(next) {
   if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
+  
+  const user = this;
+  bcrypt.hash(user.password, 12, (err, hashedPassword) => {
+    if (err) return next(err);
+    user.password = hashedPassword;
+    next();
+  });
 });
 
 /* 🔑 Compare password */
-userSchema.methods.comparePassword = function (password) {
-  return bcrypt.compare(password, this.password);
+userSchema.methods.comparePassword = function (password, callback) {
+  bcrypt.compare(password, this.password, (err, isMatch) => {
+    if (err) return callback(err);
+    callback(null, isMatch);
+  });
 };
 
 module.exports = mongoose.model("User", userSchema);
