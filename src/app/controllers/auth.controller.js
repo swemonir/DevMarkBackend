@@ -4,27 +4,56 @@ import {
   generateRefreshToken,
 } from "../utils/token.js";
 
-/* ✅ Signup */
+/*  Signup */
+
 export const signup = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
 
+    // 1️⃣ Basic validation
     if (!name || !email || !password) {
       return res.status(400).json({ message: "All fields required" });
     }
 
+    // 2️⃣ Allowed roles (prevent admin creation)
+    const allowedRoles = ["buyer", "seller"];
+    const userRole = allowedRoles.includes(role?.toLowerCase()) ? role.toLowerCase() : "buyer";
+
+    // 3️⃣ Check if email exists
     const exists = await User.findOne({ email });
     if (exists) {
       return res.status(409).json({ message: "Email already exists" });
     }
 
-    const user = await User.create({ name, email, password });
+    // 4️⃣ Create user
+    const user = await User.create({
+      name,
+      email,
+      password,
+      role: userRole, // <-- this will always be valid: "buyer" or "seller"
+    });
 
-    return res.status(201).json({
+    // 5️⃣ Respond
+    res.status(201).json({
+      success: true,
       message: "User registered successfully",
+      role: userRole,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
     });
   } catch (err) {
     console.error("SIGNUP ERROR 👉", err);
+
+    // Check if mongoose validation error
+    if (err.name === "ValidationError") {
+      const messages = Object.values(err.errors).map((val) => val.message);
+      return res.status(400).json({ message: "Validation failed", errors: messages });
+    }
+
     res.status(500).json({
       message: "Signup failed",
       error: err.message,
@@ -32,8 +61,8 @@ export const signup = async (req, res) => {
   }
 };
 
+
 /* Login */
-/* Login - Updated */
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -94,6 +123,22 @@ export const login = async (req, res) => {
     res.status(500).json({
       message: "Login failed",
       error: err.message
+    });
+  }
+};
+
+// logout 
+export const logout = async (req, res) => {
+  try {
+    res.status(200).json({
+      success: true,
+      message: "Logged out successfully. Please delete tokens on client-side.",
+    });
+  } catch (err) {
+    console.error("LOGOUT ERROR 👉", err);
+    res.status(500).json({
+      success: false,
+      message: "Logout failed",
     });
   }
 };
