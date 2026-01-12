@@ -1,6 +1,6 @@
-require('dotenv').config();
-const app = require('./app');
-const connectDB = require('./config/database');
+import 'dotenv/config';
+import app from './app.js';
+import connectDB from './config/database.js';
 
 // Connect to database
 connectDB();
@@ -25,4 +25,4 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
-module.exports = server;
+export default server;

@@ -1,10 +1,14 @@
-const express = require("express");
-const cors = require("cors");
-const helmet = require("helmet");
-const authRoutes = require("./app/routes/authRoutes");
-const compression = require("compression");
-const rateLimit = require("express-rate-limit");
-const hpp = require("hpp");
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import compression from "compression";
+import rateLimit from "express-rate-limit";
+import hpp from "hpp";
+
+// Import routes
+import authRoutes from "./app/routes/authRoutes.js";
+
+// Import middleware
 
 const app = express();
 
@@ -25,17 +29,16 @@ const limiter = rateLimit({
 app.use("/api/", limiter);
 
 // Body parsing middleware
-app.use(express.json({ limit: "10kb" }));
+app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-// Data 
+// Data sanitization
 app.use(hpp());
 
 // Compression
 app.use(compression());
 
 // Routes
-// app.use("/api/auth", authRoutes);
 app.use("/api/auth", authRoutes);
 
 // Health check
@@ -47,5 +50,6 @@ app.get("/health", (req, res) => {
   });
 });
 
+// Error handling middleware
 
-module.exports = app;
+export default app;

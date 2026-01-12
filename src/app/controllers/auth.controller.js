@@ -1,11 +1,11 @@
-const User = require("../../infrastructure/models/User.model.js");
-const {
+import User from "../../infrastructure/models/User.model.js";
+import {
   generateAccessToken,
   generateRefreshToken,
-} = require("../utils/token.js");
+} from "../utils/token.js";
 
 /* ✅ Signup */
-const signup = async (req, res) => {
+export const signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
@@ -22,7 +22,6 @@ const signup = async (req, res) => {
 
     return res.status(201).json({
       message: "User registered successfully",
-      user,
     });
   } catch (err) {
     console.error("SIGNUP ERROR 👉", err);
@@ -33,26 +32,40 @@ const signup = async (req, res) => {
   }
 };
 
-/* ✅ Login */
-const login = async (req, res) => {
+/* Login */
+/* Login - Updated */
+export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Validation
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password required" });
+    }
+
+    // Find user with password field
     const user = await User.findOne({ email }).select("+password");
+    console.log('Found user:', user ? user.email : 'Not found');
+
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const isMatch = await new Promise((resolve, reject) => {
-      user.comparePassword(password, (err, isMatch) => {
-        if (err) return reject(err);
-        resolve(isMatch);
-      });
-    });
+    // Check if password exists
+    if (!user.password) {
+      console.error('Password field missing for user:', user.email);
+      return res.status(500).json({ message: "Authentication error" });
+    }
+
+    // Compare password
+    const isMatch = await user.comparePassword(password);
+
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+
+    // Check if blocked
     if (user.isBlocked) {
       return res.status(403).json({ message: "User is blocked" });
     }
@@ -77,11 +90,10 @@ const login = async (req, res) => {
       },
     });
   } catch (err) {
-    res.status(500).json({ message: "Login failed" });
+    console.error("LOGIN ERROR 👉", err);
+    res.status(500).json({
+      message: "Login failed",
+      error: err.message
+    });
   }
-};
-
-module.exports = {
-  signup,
-  login,
 };

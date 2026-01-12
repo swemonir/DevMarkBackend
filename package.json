@@ -1,8 +1,9 @@
 {
   "name": "devmark-backend",
   "version": "1.0.0",
-  "description": "Backend API for DevNexus - Developer Marketplace Platform",
+  "description": "Backend API for DevMark - Developer Marketplace Platform",
   "main": "src/server.js",
+  "type": "module",
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
@@ -20,10 +21,10 @@
     "marketplace",
     "developer-platform"
   ],
-  "author": "DevNexus Team",
+  "author": "DevMark Team",
   "license": "MIT",
   "dependencies": {
-    "bcryptjs": "^3.0.3",
+    "bcryptjs": "^2.4.3",
     "cloudinary": "^2.8.0",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
@@ -41,7 +42,6 @@
     "socket.io": "^4.8.3",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
-    "uuid": "^13.0.0",
     "winston": "^3.19.0",
     "xss": "^1.0.15"
   },
@@ -60,9 +60,5 @@
     "prettier": "^3.7.4",
     "supertest": "^7.2.2",
     "typescript": "^5.9.3"
-  },
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
   }
 }
