@@ -7,6 +7,7 @@ import hpp from "hpp";
 
 // Import routes
 import authRoutes from "./app/routes/authRoutes.js";
+import userRoutes from "./app/routes/userRoutes.js";
 
 // Import middleware
 
@@ -39,7 +40,11 @@ app.use(hpp());
 app.use(compression());
 
 // Routes
+// auth routes
 app.use("/api/auth", authRoutes);
+
+// user routes
+app.use("/api/user", userRoutes);
 
 // Health check
 app.get("/health", (req, res) => {

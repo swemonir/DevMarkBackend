@@ -30,7 +30,7 @@ export const signup = async (req, res) => {
       name,
       email,
       password,
-      role: userRole, // <-- this will always be valid: "buyer" or "seller"
+      role: userRole,
     });
 
     // 5️⃣ Respond

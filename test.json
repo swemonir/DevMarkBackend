@@ -1,52 +1,648 @@
 {
   "info": {
-    "_postman_id": "devmark-backend-auth",
-    "name": "DevMark Backend - Auth API",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    "_postman_id": "devmark-backend-complete",
+    "name": "DevMark Backend - Complete API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Complete E-Commerce Backend API Collection with Authentication and User Management"
   },
   "item": [
     {
-      "name": "📝 Signup User",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
+      "name": "⚙️ Environment Setup",
+      "item": [
+        {
+          "name": "Set Environment Variables",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": ""
+            },
+            "description": "🚨 IMPORTANT: Setup Environment First!\n\n1. Create new Environment named 'DevMark Local'\n2. Add these variables:\n\nVariable\t\tInitial Value\n---------\t\t-------------\nbase_url\t\thttp://localhost:5000\naccess_token\t\t(empty)\nadmin_token\t\t(empty)\nuser_id\t\t\t(empty)\nseller_id\t\t(empty)\nbuyer_id\t\t(empty)\n\n3. Select 'DevMark Local' environment before testing"
           }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test@example.com\",\n  \"password\": \"12345678\"\n}"
-        },
-        "url": {
-          "raw": "http://localhost:5000/api/auth/signup",
-          "host": ["localhost"],
-          "port": "5000",
-          "path": ["api", "auth", "signup"]
         }
+      ]
+    },
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "📝 Signup User (Buyer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Buyer\",\n  \"email\": \"buyer@example.com\",\n  \"password\": \"12345678\",\n  \"role\": \"buyer\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/signup",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "signup"]
+            },
+            "description": "Register a new buyer account"
+          }
+        },
+        {
+          "name": "📝 Signup User (Seller)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jane Seller\",\n  \"email\": \"seller@example.com\",\n  \"password\": \"12345678\",\n  \"role\": \"seller\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/signup",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "signup"]
+            },
+            "description": "Register a new seller account"
+          }
+        },
+        {
+          "name": "📝 Signup User (Admin - Restricted)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Admin User\",\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin12345\",\n  \"role\": \"admin\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/signup",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "signup"]
+            },
+            "description": "⚠️ Admin role creation restricted - will default to 'buyer'\n👉 Admin must be created directly in database"
+          }
+        },
+        {
+          "name": "🔑 Login Buyer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Auto-save token after successful login",
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.environment.set(\"access_token\", jsonData.accessToken);",
+                  "    pm.environment.set(\"user_id\", jsonData.user.id);",
+                  "    pm.environment.set(\"buyer_id\", jsonData.user.id);",
+                  "    ",
+                  "    // Show success message",
+                  "    console.log(\"✅ Login successful!\");",
+                  "    console.log(\"Token saved to environment variables\");",
+                  "    console.log(\"User ID: \" + jsonData.user.id);",
+                  "    console.log(\"Role: \" + jsonData.user.role);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"buyer@example.com\",\n  \"password\": \"12345678\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Login with buyer credentials\n✅ Token auto-saved to environment"
+          }
+        },
+        {
+          "name": "🔑 Login Seller",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.environment.set(\"access_token\", jsonData.accessToken);",
+                  "    pm.environment.set(\"user_id\", jsonData.user.id);",
+                  "    pm.environment.set(\"seller_id\", jsonData.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"seller@example.com\",\n  \"password\": \"12345678\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Login with seller credentials"
+          }
+        },
+        {
+          "name": "🚪 Logout User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "logout"]
+            },
+            "description": "Logout user (client-side token removal)\n⚠️ Remember to clear token from client storage"
+          }
+        }
+      ]
+    },
+    {
+      "name": "👤 User Profile Management",
+      "item": [
+        {
+          "name": "👤 Get Current User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/profile/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "profile", "me"]
+            },
+            "description": "Get logged-in user's profile information"
+          }
+        },
+        {
+          "name": "✏️ Update Current User Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Buyer Name\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/profile/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "profile", "me"]
+            },
+            "description": "Update logged-in user's profile (name only for non-admin)"
+          }
+        },
+        {
+          "name": "✏️ Update Password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"12345678\",\n  \"password\": \"newpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/profile/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "profile", "me"]
+            },
+            "description": "Change password (requires current password)"
+          }
+        },
+        {
+          "name": "🖼️ Upload Profile Avatar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "avatar",
+                  "type": "file",
+                  "description": "Select image file (max 5MB, JPEG/PNG/GIF/WebP)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/profile/avatar",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "profile", "avatar"]
+            },
+            "description": "Upload profile picture\n📁 Select image file from your computer"
+          }
+        },
+        {
+          "name": "🗑️ Delete Profile Avatar",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/profile/avatar",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "profile", "avatar"]
+            },
+            "description": "Remove profile picture"
+          }
+        }
+      ]
+    },
+    {
+      "name": "👑 Admin User Management",
+      "item": [
+        {
+          "name": "📋 Get All Users (Admin Only)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "role",
+                  "value": "",
+                  "description": "Optional: buyer, seller, admin"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional: Search in name or email"
+                }
+              ]
+            },
+            "description": "Get all users with pagination (Admin only)\n⚠️ Requires admin_token"
+          }
+        },
+        {
+          "name": "📊 Get User Statistics (Admin Only)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/stats",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "stats"]
+            },
+            "description": "Get dashboard statistics (Admin only)"
+          }
+        },
+        {
+          "name": "👁️ Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{user_id}}"]
+            },
+            "description": "Get specific user details (Admin or self)"
+          }
+        },
+        {
+          "name": "✏️ Update User (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Admin Updated Name\",\n  \"role\": \"seller\",\n  \"isBlocked\": false,\n  \"isEmailVerified\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{user_id}}"]
+            },
+            "description": "Admin update any user (all fields)"
+          }
+        },
+        {
+          "name": "🚫 Block/Unblock User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isBlocked\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{user_id}}"]
+            },
+            "description": "Admin can block/unblock users"
+          }
+        },
+        {
+          "name": "🗑️ Delete User (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirm\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{user_id}}"]
+            },
+            "description": "Admin delete user (requires confirm: true)"
+          }
+        },
+        {
+          "name": "👤 Regular User Update Self",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My Updated Name Only\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{user_id}}"]
+            },
+            "description": "Regular user can only update their own name\n❌ Cannot update role, isBlocked, etc."
+          }
+        },
+        {
+          "name": "🗑️ Self Delete Account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirm\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{user_id}}"]
+            },
+            "description": "User can delete their own account (requires confirm)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🚀 Quick Testing Workflow",
+      "item": [
+        {
+          "name": "🔄 Complete Test Flow",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": ""
+            },
+            "description": "Recommended Testing Order:\n\n1. 🔐 Authentication\n   • Signup Buyer\n   • Signup Seller\n   • Login Buyer (auto-saves token)\n   \n2. 👤 User Profile\n   • Get Current Profile\n   • Update Profile\n   • Upload Avatar\n   \n3. 👑 Admin (requires admin account)\n   • Get All Users\n   • Update Users\n   • Delete Users\n   \n📌 Note: Admin must be created in database directly"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "admin_token",
+      "value": ""
+    },
+    {
+      "key": "user_id",
+      "value": ""
+    },
+    {
+      "key": "seller_id",
+      "value": ""
+    },
+    {
+      "key": "buyer_id",
+      "value": ""
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "console.log('🚀 Running request: ' + pm.request.name);",
+          "console.log('🌐 URL: ' + pm.request.url.toString());",
+          "console.log('🔑 Token: ' + pm.environment.get('access_token') ? 'Set' : 'Not set');"
+        ]
       }
     },
     {
-      "name": "🔑 Login User",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"12345678\"\n}"
-        },
-        "url": {
-          "raw": "http://localhost:5000/api/auth/login",
-          "host": ["localhost"],
-          "port": "5000",
-          "path": ["api", "auth", "login"]
-        }
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Common response tests",
+          "pm.test(\"Response time is acceptable\", function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+          "});",
+          "",
+          "pm.test(\"Response has correct content type\", function () {",
+          "    pm.response.to.have.header(\"Content-Type\", \"application/json; charset=utf-8\");",
+          "});",
+          "",
+          "// For 2xx responses",
+          "if (pm.response.code >= 200 && pm.response.code < 300) {",
+          "    pm.test(\"Status code is successful\", function () {",
+          "        pm.response.to.be.success;",
+          "    });",
+          "    ",
+          "    // Check response structure",
+          "    const jsonData = pm.response.json();",
+          "    if (jsonData) {",
+          "        pm.test(\"Response has success field\", function () {",
+          "            pm.expect(jsonData).to.have.property(\"success\");",
+          "        });",
+          "    }",
+          "}",
+          "",
+          "// For 4xx responses",
+          "if (pm.response.code >= 400 && pm.response.code < 500) {",
+          "    pm.test(\"Client error response\", function () {",
+          "        pm.response.to.be.clientError;",
+          "    });",
+          "}",
+          "",
+          "// Auto-save user ID from any response with user data",
+          "const jsonData = pm.response.json();",
+          "if (jsonData && jsonData.user && jsonData.user.id) {",
+          "    pm.environment.set(\"user_id\", jsonData.user.id);",
+          "    ",
+          "    // Set role-specific IDs",
+          "    if (jsonData.user.role === \"seller\") {",
+          "        pm.environment.set(\"seller_id\", jsonData.user.id);",
+          "    }",
+          "    if (jsonData.user.role === \"buyer\") {",
+          "        pm.environment.set(\"buyer_id\", jsonData.user.id);",
+          "    }",
+          "}"
+        ]
       }
     }
   ]
