@@ -1,4 +1,5 @@
-import User from "../../infrastructure/models/User.model.js";
+import UserModel from "../../infrastructure/models/User.model.js";
+import jwt from "jsonwebtoken";
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -16,11 +17,10 @@ export const signup = async (req, res) => {
     }
 
     // 2️⃣ Allowed roles (prevent admin creation)
-    const allowedRoles = ["buyer", "seller"];
+    const allowedRoles = ["buyer", "seller", "admin"];
     const userRole = allowedRoles.includes(role?.toLowerCase()) ? role.toLowerCase() : "buyer";
-
     // 3️⃣ Check if email exists
-    const exists = await User.findOne({ email });
+    const exists = await UserModel.findOne({ email });
     if (exists) {
       return res.status(409).json({ message: "Email already exists" });
     }
@@ -73,7 +73,7 @@ export const login = async (req, res) => {
     }
 
     // Find user with password field
-    const user = await User.findOne({ email }).select("+password");
+    const user = await UserModel.findOne({ email }).select("+password");
     console.log('Found user:', user ? user.email : 'Not found');
 
     if (!user) {
@@ -100,8 +100,8 @@ export const login = async (req, res) => {
     }
 
     const accessToken = generateAccessToken({
-      id: user._id,
-      role: user.role,
+      id: user._id.toString(), // ✅ Convert to string
+      role: user.role
     });
 
     const refreshToken = generateRefreshToken({
@@ -140,5 +140,45 @@ export const logout = async (req, res) => {
       success: false,
       message: "Logout failed",
     });
+  }
+};
+
+// Refresh access token using refresh token
+export const refreshToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({ success: false, message: 'No refresh token provided' });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    } catch (err) {
+      if (err.name === 'TokenExpiredError') {
+        return res.status(401).json({ success: false, message: 'Refresh token expired' });
+      }
+      return res.status(401).json({ success: false, message: 'Invalid refresh token', error: err.message });
+    }
+
+    const user = await UserModel.findById(decoded.id);
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'User not found' });
+    }
+
+    if (user.isBlocked) {
+      return res.status(403).json({ success: false, message: 'User is blocked' });
+    }
+
+    const accessToken = generateAccessToken({ id: user._id.toString(), role: user.role });
+
+    res.status(200).json({
+      success: true,
+      accessToken,
+    });
+  } catch (err) {
+    console.error('REFRESH TOKEN ERROR 👉', err);
+    res.status(500).json({ success: false, message: 'Could not refresh token', error: err.message });
   }
 };

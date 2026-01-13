@@ -26,40 +26,40 @@ const getSafeUserObject = (user) => ({
 export const getAllUsers = async (req, res) => {
   try {
     const { page = 1, limit = 10, role, search, isBlocked } = req.query;
-    
+
     // Build query object
     let query = {};
-    
+
     if (role) {
       query.role = role;
     }
-    
+
     if (isBlocked !== undefined) {
       query.isBlocked = isBlocked === 'true';
     }
-    
+
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
         { email: { $regex: search, $options: 'i' } }
       ];
     }
-    
+
     // Pagination
     const pageNumber = parseInt(page);
     const pageSize = parseInt(limit);
     const skip = (pageNumber - 1) * pageSize;
-    
+
     // Get total count
     const total = await UserModel.countDocuments(query);
-    
+
     // Get users with pagination
     const users = await UserModel.find(query)
       .select('-password -emailVerificationToken -emailVerificationExpire -resetPasswordToken -resetPasswordExpire')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(pageSize);
-    
+
     res.status(200).json({
       success: true,
       count: users.length,
@@ -68,7 +68,7 @@ export const getAllUsers = async (req, res) => {
       currentPage: pageNumber,
       data: users.map(getSafeUserObject)
     });
-    
+
   } catch (err) {
     console.error("GET ALL USERS ERROR 👉", err);
     res.status(500).json({
@@ -93,33 +93,33 @@ export const getUserById = async (req, res) => {
         message: "Invalid user ID"
       });
     }
-    
+
     const user = await UserModel.findById(req.params.id)
       .select('-password -emailVerificationToken -emailVerificationExpire -resetPasswordToken -resetPasswordExpire');
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
         message: "User not found"
       });
     }
-    
+
     // Check if requester is admin or the user themselves
     const isAdmin = req.user.role === 'admin';
     const isSelf = req.user.id === req.params.id;
-    
+
     if (!isAdmin && !isSelf) {
       return res.status(403).json({
         success: false,
         message: "Not authorized to access this user's information"
       });
     }
-    
+
     res.status(200).json({
       success: true,
       data: getSafeUserObject(user)
     });
-    
+
   } catch (err) {
     console.error("GET USER BY ID ERROR 👉", err);
     res.status(500).json({
@@ -144,29 +144,29 @@ export const updateUser = async (req, res) => {
         message: "Invalid user ID"
       });
     }
-    
+
     const user = await UserModel.findById(req.params.id);
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
         message: "User not found"
       });
     }
-    
+
     // Authorization check
     const isAdmin = req.user.role === 'admin';
     const isSelf = req.user.id === req.params.id;
-    
+
     if (!isAdmin && !isSelf) {
       return res.status(403).json({
         success: false,
         message: "Not authorized to update this user"
       });
     }
-    
+
     const { name, email, role, isBlocked, isEmailVerified } = req.body;
-    
+
     // Non-admin users can only update their own name
     if (!isAdmin) {
       // Regular users cannot change role, block status, or email verification
@@ -176,7 +176,7 @@ export const updateUser = async (req, res) => {
           message: "Not authorized to update these fields"
         });
       }
-      
+
       // Regular users cannot change email (use separate email change flow)
       if (email && email !== user.email) {
         return res.status(403).json({
@@ -184,7 +184,7 @@ export const updateUser = async (req, res) => {
           message: "Please use email change request"
         });
       }
-      
+
       // Update only name
       if (name) {
         user.name = name;
@@ -194,11 +194,11 @@ export const updateUser = async (req, res) => {
       if (name) user.name = name;
       if (email && email !== user.email) {
         // Check if new email already exists
-        const emailExists = await UserModel.findOne({ 
-          email, 
-          _id: { $ne: req.params.id } 
+        const emailExists = await UserModel.findOne({
+          email,
+          _id: { $ne: req.params.id }
         });
-        
+
         if (emailExists) {
           return res.status(409).json({
             success: false,
@@ -211,25 +211,25 @@ export const updateUser = async (req, res) => {
       if (isBlocked !== undefined) user.isBlocked = isBlocked;
       if (isEmailVerified !== undefined) user.isEmailVerified = isEmailVerified;
     }
-    
+
     await user.save();
-    
+
     res.status(200).json({
       success: true,
       message: "User updated successfully",
       data: getSafeUserObject(user)
     });
-    
+
   } catch (err) {
     console.error("UPDATE USER ERROR 👉", err);
-    
+
     if (err.code === 11000) {
       return res.status(409).json({
         success: false,
         message: "Email already exists"
       });
     }
-    
+
     if (err.name === "ValidationError") {
       const messages = Object.values(err.errors).map(val => val.message);
       return res.status(400).json({
@@ -238,7 +238,7 @@ export const updateUser = async (req, res) => {
         errors: messages
       });
     }
-    
+
     res.status(500).json({
       success: false,
       message: "Failed to update user",
@@ -261,45 +261,45 @@ export const deleteUser = async (req, res) => {
         message: "Invalid user ID"
       });
     }
-    
+
     const user = await UserModel.findById(req.params.id);
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
         message: "User not found"
       });
     }
-    
+
     // Authorization check
     const isAdmin = req.user.role === 'admin';
     const isSelf = req.user.id === req.params.id;
-    
+
     if (!isAdmin && !isSelf) {
       return res.status(403).json({
         success: false,
         message: "Not authorized to delete this user"
       });
     }
-    
+
     // Admin can delete anyone, users can only delete themselves
     // Optional: Add confirmation for self-deletion
     const { confirm } = req.body;
-    
+
     if (!isAdmin && isSelf && confirm !== true) {
       return res.status(400).json({
         success: false,
         message: "Please confirm deletion by sending { confirm: true } in request body"
       });
     }
-    
+
     await UserModel.findByIdAndDelete(req.params.id);
-    
+
     res.status(200).json({
       success: true,
       message: "User deleted successfully"
     });
-    
+
   } catch (err) {
     console.error("DELETE USER ERROR 👉", err);
     res.status(500).json({
@@ -321,12 +321,12 @@ export const getCurrentUser = async (req, res) => {
   try {
     const user = await UserModel.findById(req.user.id)
       .select('-password -emailVerificationToken -emailVerificationExpire -resetPasswordToken -resetPasswordExpire');
-    
+
     res.status(200).json({
       success: true,
       data: getSafeUserObject(user)
     });
-    
+
   } catch (err) {
     console.error("GET CURRENT USER ERROR 👉", err);
     res.status(500).json({
@@ -346,32 +346,32 @@ export const updateCurrentUser = async (req, res) => {
   try {
     const { name, email, password, currentPassword } = req.body;
     const user = await UserModel.findById(req.user.id).select('+password');
-    
+
     // Update name if provided
     if (name) {
       user.name = name;
     }
-    
+
     // Handle email change
     if (email && email !== user.email) {
       // Check if email already exists
-      const emailExists = await UserModel.findOne({ 
-        email, 
-        _id: { $ne: req.user.id } 
+      const emailExists = await UserModel.findOne({
+        email,
+        _id: { $ne: req.user.id }
       });
-      
+
       if (emailExists) {
         return res.status(409).json({
           success: false,
           message: "Email already in use"
         });
       }
-      
+
       user.email = email;
       user.isEmailVerified = false; // Reset email verification on email change
       // TODO: Send verification email
     }
-    
+
     // Handle password change
     if (password) {
       if (!currentPassword) {
@@ -380,7 +380,7 @@ export const updateCurrentUser = async (req, res) => {
           message: "Current password is required to set new password"
         });
       }
-      
+
       // Verify current password
       const isMatch = await user.comparePassword(currentPassword);
       if (!isMatch) {
@@ -389,12 +389,12 @@ export const updateCurrentUser = async (req, res) => {
           message: "Current password is incorrect"
         });
       }
-      
+
       user.password = password;
     }
-    
+
     await user.save();
-    
+
     // Generate new token if email or password changed
     let newAccessToken = null;
     if (email || password) {
@@ -403,17 +403,17 @@ export const updateCurrentUser = async (req, res) => {
         role: user.role
       });
     }
-    
+
     res.status(200).json({
       success: true,
       message: "Profile updated successfully",
       newAccessToken,
       data: getSafeUserObject(user)
     });
-    
+
   } catch (err) {
     console.error("UPDATE PROFILE ERROR 👉", err);
-    
+
     if (err.name === "ValidationError") {
       const messages = Object.values(err.errors).map(val => val.message);
       return res.status(400).json({
@@ -422,7 +422,7 @@ export const updateCurrentUser = async (req, res) => {
         errors: messages
       });
     }
-    
+
     res.status(500).json({
       success: false,
       message: "Failed to update profile",
@@ -445,7 +445,7 @@ export const uploadAvatar = async (req, res) => {
         message: "Please upload an image file"
       });
     }
-    
+
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowedTypes.includes(req.file.mimetype)) {
@@ -454,7 +454,7 @@ export const uploadAvatar = async (req, res) => {
         message: "Only JPEG, PNG, GIF, and WebP images are allowed"
       });
     }
-    
+
     // Validate file size (max 5MB)
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (req.file.size > maxSize) {
@@ -463,25 +463,25 @@ export const uploadAvatar = async (req, res) => {
         message: "Image size must be less than 5MB"
       });
     }
-    
+
     // Add avatar field to user model first (update your User.model.js)
     // In User.model.js, add:
     // avatar: {
     //   type: String,
     //   default: null
     // }
-    
+
     const user = await UserModel.findById(req.user.id);
-    
+
     // TODO: Delete old avatar from storage if exists
     // if (user.avatar) {
     //   // Delete old file logic here
     // }
-    
+
     // Update user with new avatar URL/path
     user.avatar = `/uploads/avatars/${req.file.filename}`;
     await user.save();
-    
+
     res.status(200).json({
       success: true,
       message: "Avatar uploaded successfully",
@@ -489,7 +489,7 @@ export const uploadAvatar = async (req, res) => {
         avatar: user.avatar
       }
     });
-    
+
   } catch (err) {
     console.error("UPLOAD AVATAR ERROR 👉", err);
     res.status(500).json({
@@ -508,28 +508,28 @@ export const uploadAvatar = async (req, res) => {
 export const deleteAvatar = async (req, res) => {
   try {
     const user = await UserModel.findById(req.user.id);
-    
+
     if (!user.avatar) {
       return res.status(404).json({
         success: false,
         message: "No avatar found"
       });
     }
-    
+
     // TODO: Delete avatar file from storage
     // const filePath = path.join(__dirname, '..', user.avatar);
     // if (fs.existsSync(filePath)) {
     //   fs.unlinkSync(filePath);
     // }
-    
+
     user.avatar = null;
     await user.save();
-    
+
     res.status(200).json({
       success: true,
       message: "Avatar deleted successfully"
     });
-    
+
   } catch (err) {
     console.error("DELETE AVATAR ERROR 👉", err);
     res.status(500).json({
@@ -547,7 +547,7 @@ export const deleteAvatar = async (req, res) => {
  */
 export const getUserStats = async (req, res) => {
   try {
-    const stats = await User.aggregate([
+    const stats = await UserModel.aggregate([
       {
         $group: {
           _id: '$role',
@@ -569,22 +569,22 @@ export const getUserStats = async (req, res) => {
         $sort: { count: -1 }
       }
     ]);
-    
+
     const totalUsers = await UserModel.countDocuments();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const newUsersToday = await UserModel.countDocuments({
       createdAt: { $gte: today }
     });
-    
+
     const lastWeek = new Date();
     lastWeek.setDate(lastWeek.getDate() - 7);
-    
+
     const newUsersThisWeek = await UserModel.countDocuments({
       createdAt: { $gte: lastWeek }
     });
-    
+
     res.status(200).json({
       success: true,
       data: {
@@ -594,7 +594,7 @@ export const getUserStats = async (req, res) => {
         stats
       }
     });
-    
+
   } catch (err) {
     console.error("USER STATS ERROR 👉", err);
     res.status(500).json({

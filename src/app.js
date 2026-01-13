@@ -4,12 +4,19 @@ import helmet from "helmet";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
 import hpp from "hpp";
+import dotenv from 'dotenv';
+import jwt from 'jsonwebtoken';
+
+// ========== LOAD ENV FIRST ==========
+dotenv.config();
+
+console.log('✅ Environment loaded');
+console.log('🔑 JWT_SECRET exists:', !!process.env.JWT_SECRET);
+console.log('🔑 JWT_SECRET length:', process.env.JWT_SECRET?.length);
 
 // Import routes
 import authRoutes from "./app/routes/authRoutes.js";
 import userRoutes from "./app/routes/userRoutes.js";
-
-// Import middleware
 
 const app = express();
 
@@ -23,7 +30,7 @@ app.use(
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
   message: "Too many requests from this IP, please try again later.",
 });
@@ -35,16 +42,50 @@ app.use(express.urlencoded({ extended: true }));
 
 // Data sanitization
 app.use(hpp());
-
 // Compression
 app.use(compression());
 
-// Routes
-// auth routes
+// ========== ROUTES ==========
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 
-// user routes
-app.use("/api/user", userRoutes);
+// Debug endpoint
+
+app.get('/api/debug/verify-token', (req, res) => {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.json({ 
+      success: false, 
+      message: 'No Bearer token provided',
+      header: authHeader 
+    });
+  }
+  
+  const token = authHeader.split(' ')[1];
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    res.json({
+      success: true,
+      message: 'Token verified successfully',
+      decoded,
+      tokenInfo: {
+        length: token.length,
+        first20: token.substring(0, 20) + '...'
+      }
+    });
+  } catch (error) {
+    res.json({
+      success: false,
+      message: 'Token verification failed',
+      error: error.message,
+      errorName: error.name,
+      JWT_SECRET: process.env.JWT_SECRET ? 'Set' : 'Not set'
+    });
+  }
+});
 
 // Health check
 app.get("/health", (req, res) => {
@@ -55,6 +96,22 @@ app.get("/health", (req, res) => {
   });
 });
 
-// Error handling middleware
+// Test endpoint without auth
+app.get("/api/test-public", (req, res) => {
+  res.json({
+    success: true,
+    message: "Public route works!",
+    time: new Date().toISOString()
+  });
+});
+
+// ========== FIXED 404 HANDLER ==========
+// Remove the problematic line and use this:
+app.use((req, res, next) => {
+  res.status(404).json({
+    success: false,
+    message: `Route ${req.originalUrl} not found on this server`
+  });
+});
 
 export default app;

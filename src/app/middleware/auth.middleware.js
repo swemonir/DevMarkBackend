@@ -7,7 +7,7 @@ export const protect = async (req, res, next) => {
 
     if (
       req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
+      req.headers.authorization.startsWith("Bearer ")
     ) {
       token = req.headers.authorization.split(" ")[1];
     }
@@ -40,9 +40,21 @@ export const protect = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
+    console.error('JWT verification failed:', error);
+
+    if (error && error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Token expired',
+        expiredAt: error.expiredAt,
+      });
+    }
+
     return res.status(401).json({
       success: false,
       message: "Not authorized, token failed",
+      error: error.message,
+      errorName: error.name,
     });
   }
 };
