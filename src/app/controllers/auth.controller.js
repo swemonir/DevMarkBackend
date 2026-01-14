@@ -26,7 +26,7 @@ export const signup = async (req, res) => {
     }
 
     // 4️⃣ Create user
-    const user = await User.create({
+    const user = await UserModel.create({
       name,
       email,
       password,

@@ -1,0 +1,522 @@
+{
+    "info": {
+        "_postman_id": "project-management-api-2024",
+        "name": "DevMark - Project Management API",
+        "description": "Complete API collection for Project Management feature with CRUD operations, submit/approve/reject workflow, and media upload",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{access_token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "item": [
+        {
+            "name": "Public Routes",
+            "item": [
+                {
+                    "name": "Get All Projects (Public - Approved Only)",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/projects?page=1&limit=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "projects"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                },
+                                {
+                                    "key": "category",
+                                    "value": "web-development",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "search",
+                                    "value": "website",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "minPrice",
+                                    "value": "1000",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "maxPrice",
+                                    "value": "10000",
+                                    "disabled": true
+                                }
+                            ]
+                        },
+                        "description": "Get all approved projects (public access)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Project by ID (Public - If Approved)",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/projects/{{project_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "projects",
+                                "{{project_id}}"
+                            ]
+                        },
+                        "description": "Get single project by ID (public can only view approved projects)"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Public routes that don't require authentication"
+        },
+        {
+            "name": "User Routes - CRUD",
+            "item": [
+                {
+                    "name": "Get All Projects (Authenticated User)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/projects?page=1&limit=10&status=draft",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "projects"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                },
+                                {
+                                    "key": "status",
+                                    "value": "draft",
+                                    "description": "Filter your own projects by status"
+                                },
+                                {
+                                    "key": "category",
+                                    "value": "web-development",
+                                    "disabled": true
+                                }
+                            ]
+                        },
+                        "description": "User can see approved projects + their own projects"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create New Project",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.environment.set('project_id', response.data.id);",
+                                    "    console.log('Project created with ID:', response.data.id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Build E-commerce Website with MERN Stack\",\n  \"description\": \"Need a full-stack e-commerce website with payment gateway integration, user authentication, product management, and shopping cart functionality. Must be responsive and SEO optimized.\",\n  \"category\": \"web-development\",\n  \"price\": 5000,\n  \"deliveryTime\": 30\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/projects",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "projects"
+                            ]
+                        },
+                        "description": "Create a new project (status: draft)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Project",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Build E-commerce Website with MERN Stack - Updated\",\n  \"description\": \"Need a full-stack e-commerce website with payment gateway integration, user authentication, product management, shopping cart, and admin dashboard. Must be responsive and SEO optimized with proper documentation.\",\n  \"price\": 5500,\n  \"deliveryTime\": 35\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/projects/{{project_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "projects",
+                                "{{project_id}}"
+                            ]
+                        },
+                        "description": "Update project (only draft or rejected projects can be edited by owner)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Project",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/projects/{{project_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "projects",
+                                "{{project_id}}"
+                            ]
+                        },
+                        "description": "Delete project (owner or admin only)"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "User CRUD operations on projects"
+        },
+        {
+            "name": "User Routes - Submit & Media",
+            "item": [
+                {
+                    "name": "Submit Project for Review",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/projects/{{project_id}}/submit",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "projects",
+                                "{{project_id}}",
+                                "submit"
+                            ]
+                        },
+                        "description": "Submit project for admin review (draft/rejected → submitted)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Upload Project Media",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "media",
+                                    "type": "file",
+                                    "src": [],
+                                    "description": "Upload up to 5 image files (JPEG, PNG, GIF, WebP) - Max 10MB each"
+                                },
+                                {
+                                    "key": "media",
+                                    "type": "file",
+                                    "src": [],
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "media",
+                                    "type": "file",
+                                    "src": [],
+                                    "disabled": true
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/projects/{{project_id}}/media",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "projects",
+                                "{{project_id}}",
+                                "media"
+                            ]
+                        },
+                        "description": "Upload media files for project (owner only). Max 5 files, 10MB each. Supported: JPEG, PNG, GIF, WebP"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Project submission and media upload"
+        },
+        {
+            "name": "Admin Routes",
+            "item": [
+                {
+                    "name": "Get All Projects (Admin - All Projects)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/projects?status=submitted&page=1&limit=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "projects"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "submitted",
+                                    "description": "Admin can filter by any status"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        },
+                        "description": "Admin can view all projects with any status"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Approve Project",
+                    "request": {
+                        "method": "PUT",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/projects/{{project_id}}/approve",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "projects",
+                                "{{project_id}}",
+                                "approve"
+                            ]
+                        },
+                        "description": "Approve submitted project (Admin only). Status: submitted → approved"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Reject Project",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reason\": \"Project description is not clear. Please provide more details about the technical stack, deliverables, and milestones.\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/projects/{{project_id}}/reject",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "projects",
+                                "{{project_id}}",
+                                "reject"
+                            ]
+                        },
+                        "description": "Reject submitted project with reason (Admin only). Status: submitted → rejected"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Admin-only routes for project approval/rejection"
+        },
+        {
+            "name": "Example Workflows",
+            "item": [
+                {
+                    "name": "1. User Login",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.environment.set('access_token', response.accessToken);",
+                                    "    console.log('Login successful! Token saved.');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        },
+                        "description": "Login as regular user to get access token"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "2. Admin Login",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.environment.set('admin_token', response.accessToken);",
+                                    "    console.log('Admin login successful! Token saved to admin_token.');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        },
+                        "description": "Login as admin to get admin access token"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Example workflow requests with pre/post scripts"
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:5000",
+            "type": "string"
+        },
+        {
+            "key": "access_token",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "admin_token",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "project_id",
+            "value": "",
+            "type": "string"
+        }
+    ]
+}

@@ -17,6 +17,7 @@ console.log('🔑 JWT_SECRET length:', process.env.JWT_SECRET?.length);
 // Import routes
 import authRoutes from "./app/routes/authRoutes.js";
 import userRoutes from "./app/routes/userRoutes.js";
+import projectRoutes from "./app/routes/projectRoutes.js";
 
 const app = express();
 
@@ -48,25 +49,25 @@ app.use(compression());
 // ========== ROUTES ==========
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/projects", projectRoutes);
 
 // Debug endpoint
-
 app.get('/api/debug/verify-token', (req, res) => {
   const authHeader = req.headers.authorization;
-  
+
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.json({ 
-      success: false, 
+    return res.json({
+      success: false,
       message: 'No Bearer token provided',
-      header: authHeader 
+      header: authHeader
     });
   }
-  
+
   const token = authHeader.split(' ')[1];
-  
+
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+
     res.json({
       success: true,
       message: 'Token verified successfully',
