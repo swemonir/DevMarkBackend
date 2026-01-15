@@ -17,7 +17,7 @@ import { protect, restrictTo } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
-// Configure multer for project media upload
+// Multer configuration for project media upload
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'uploads/projects/');
@@ -32,9 +32,8 @@ const storage = multer.diskStorage({
 
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit per file
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB per file
     fileFilter: (req, file, cb) => {
-        // Allow only image files
         const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/jpg'];
         if (allowedTypes.includes(file.mimetype)) {
             cb(null, true);
@@ -44,28 +43,22 @@ const upload = multer({
     }
 });
 
-/* =================== PUBLIC ROUTES =================== */
-// Public can view approved projects
-router.get('/', getAllProjects);
-router.get('/:id', getProjectById);
+/* =================== PUBLIC/OPTIONAL AUTH ROUTES =================== */
+// These routes work with or without authentication
+router.get('/', protect, getAllProjects);
+router.get('/:id', protect, getProjectById);
 
 /* =================== AUTHENTICATED ROUTES =================== */
-// Apply protect middleware to all routes below
+// All routes below require authentication
 router.use(protect);
 
-// User project management routes
 router.post('/', createProject);
 router.put('/:id', updateProject);
 router.delete('/:id', deleteProject);
-
-// Submit for review
 router.post('/:id/submit', submitProject);
-
-// Media upload (max 5 files at once)
 router.post('/:id/media', upload.array('media', 5), uploadProjectMedia);
 
 /* =================== ADMIN ROUTES =================== */
-// Admin review routes
 router.put('/:id/approve', restrictTo('admin'), approveProject);
 router.put('/:id/reject', restrictTo('admin'), rejectProject);
 

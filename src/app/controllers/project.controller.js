@@ -2,66 +2,38 @@
 import ProjectModel from "../../infrastructure/models/Project.model.js";
 import mongoose from "mongoose";
 
-// Helper function to get safe project object
-const getSafeProjectObject = (project) => ({
-    id: project._id,
-    title: project.title,
-    description: project.description,
-    category: project.category,
-    price: project.price,
-    deliveryTime: project.deliveryTime,
-    owner: project.owner,
-    status: project.status,
-    rejectionReason: project.rejectionReason,
-    media: project.media,
-    submittedAt: project.submittedAt,
-    reviewedAt: project.reviewedAt,
-    reviewedBy: project.reviewedBy,
-    createdAt: project.createdAt,
-    updatedAt: project.updatedAt,
-    ageInDays: project.ageInDays
-});
-
 /* =================== PUBLIC/USER ROUTES =================== */
 
 /**
  * @desc    Get all projects (filtered by user role and status)
  * @route   GET /api/projects
- * @access  Public (approved projects), Private (own projects), Admin (all projects)
+ * @access  Public (approved only), Private (own + approved), Admin (all)
  */
 export const getAllProjects = async (req, res) => {
     try {
         const { page = 1, limit = 10, category, status, search, minPrice, maxPrice } = req.query;
+        const query = {};
 
-        // Build query object
-        let query = {};
+        // Debug logging
+        console.log('\n🔍 ============ GET ALL PROJECTS DEBUG ============');
+        console.log('👤 User:', req.user ? `${req.user.email} (${req.user.role})` : '❌ Not authenticated');
+        console.log('📋 Query Params:', { page, limit, category, status, search, minPrice, maxPrice });
 
-        // Role-based filtering
+        // Role-based access control
         if (!req.user) {
-            // Public users can only see approved projects
             query.status = 'approved';
+            console.log('🔓 Access: PUBLIC - Only approved projects');
         } else if (req.user.role === 'admin') {
-            // Admin can see all projects
-            if (status) {
-                query.status = status;
-            }
+            if (status) query.status = status;
+            console.log('👑 Access: ADMIN - ALL projects' + (status ? ` (status=${status})` : ''));
         } else {
-            // Regular users can see approved projects and their own projects
-            query.$or = [
-                { status: 'approved' },
-                { owner: req.user.id }
-            ];
-
-            // If status filter is provided by user, apply it only to their own projects
-            if (status) {
-                query.$or[1].status = status;
-            }
+            query.$or = [{ status: 'approved' }, { owner: req.user.id }];
+            if (status) query.$or[1].status = status;
+            console.log('👤 Access: USER - Own + approved projects');
         }
 
         // Apply filters
-        if (category) {
-            query.category = category;
-        }
+        if (category) query.category = category;
 
         if (minPrice || maxPrice) {
             query.price = {};
@@ -70,38 +42,45 @@ export const getAllProjects = async (req, res) => {
         }
 
         if (search) {
-            query.$and = query.$and || [];
-            query.$and.push({
-                $or: [
-                    { title: { $regex: search, $options: 'i' } },
-                    { description: { $regex: search, $options: 'i' } }
-                ]
-            });
+            query.$and = [
+                {
+                    $or: [
+                        { title: { $regex: search, $options: 'i' } },
+                        { description: { $regex: search, $options: 'i' } }
+                    ]
+                }
+            ];
         }
 
+        console.log('🔎 MongoDB Query:', JSON.stringify(query, null, 2));
+
         // Pagination
-        const pageNumber = parseInt(page);
+        const pageNum = parseInt(page);
         const pageSize = parseInt(limit);
-        const skip = (pageNumber - 1) * pageSize;
+        const skip = (pageNum - 1) * pageSize;
 
-        // Get total count
-        const total = await ProjectModel.countDocuments(query);
+        // Execute queries in parallel
+        const [total, projects] = await Promise.all([
+            ProjectModel.countDocuments(query),
+            ProjectModel.find(query)
+                .populate('owner', 'name email')
+                .populate('reviewedBy', 'name email')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(pageSize)
+                .lean()
+        ]);
 
-        // Get projects with pagination and populate owner
-        const projects = await ProjectModel.find(query)
-            .populate('owner', 'name email')
-            .populate('reviewedBy', 'name email')
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(pageSize);
+        console.log(`✅ Results: ${total} total, ${projects.length} on page ${pageNum}`);
+        console.log('================================================\n');
 
         res.status(200).json({
             success: true,
             count: projects.length,
             total,
             totalPages: Math.ceil(total / pageSize),
-            currentPage: pageNumber,
-            data: projects.map(getSafeProjectObject)
+            currentPage: pageNum,
+            data: projects
         });
 
     } catch (err) {
@@ -121,7 +100,6 @@ export const getAllProjects = async (req, res) => {
  */
 export const getProjectById = async (req, res) => {
     try {
-        // Validate MongoDB ID
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
             return res.status(400).json({
                 success: false,
@@ -131,7 +109,8 @@ export const getProjectById = async (req, res) => {
 
         const project = await ProjectModel.findById(req.params.id)
             .populate('owner', 'name email')
-            .populate('reviewedBy', 'name email');
+            .populate('reviewedBy', 'name email')
+            .lean();
 
         if (!project) {
             return res.status(404).json({
@@ -152,10 +131,7 @@ export const getProjectById = async (req, res) => {
             });
         }
 
-        res.status(200).json({
-            success: true,
-            data: getSafeProjectObject(project)
-        });
+        res.status(200).json({ success: true, data: project });
 
     } catch (err) {
         console.error("GET PROJECT BY ID ERROR 👉", err);
@@ -176,7 +152,6 @@ export const createProject = async (req, res) => {
     try {
         const { title, description, category, price, deliveryTime } = req.body;
 
-        // Create project with draft status
         const project = await ProjectModel.create({
             title,
             description,
@@ -188,12 +163,13 @@ export const createProject = async (req, res) => {
         });
 
         const populatedProject = await ProjectModel.findById(project._id)
-            .populate('owner', 'name email');
+            .populate('owner', 'name email')
+            .lean();
 
         res.status(201).json({
             success: true,
             message: "Project created successfully",
-            data: getSafeProjectObject(populatedProject)
+            data: populatedProject
         });
 
     } catch (err) {
@@ -219,35 +195,22 @@ export const createProject = async (req, res) => {
 /**
  * @desc    Update project
  * @route   PUT /api/projects/:id
- * @access  Private (Owner only, and only for draft/rejected projects)
+ * @access  Private (Owner only, draft/rejected status only)
  */
 export const updateProject = async (req, res) => {
     try {
-        // Validate MongoDB ID
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid project ID"
-            });
+            return res.status(400).json({ success: false, message: "Invalid project ID" });
         }
 
         const project = await ProjectModel.findById(req.params.id);
-
         if (!project) {
-            return res.status(404).json({
-                success: false,
-                message: "Project not found"
-            });
+            return res.status(404).json({ success: false, message: "Project not found" });
         }
 
-        // Authorization check - only owner can update
-        const isOwner = req.user.id === project.owner.toString();
-
-        if (!isOwner) {
-            return res.status(403).json({
-                success: false,
-                message: "Not authorized to update this project"
-            });
+        // Authorization: only owner can update
+        if (req.user.id !== project.owner.toString()) {
+            return res.status(403).json({ success: false, message: "Not authorized to update this project" });
         }
 
         // Can only edit draft or rejected projects
@@ -259,40 +222,34 @@ export const updateProject = async (req, res) => {
         }
 
         const { title, description, category, price, deliveryTime } = req.body;
-
-        // Update fields
         if (title) project.title = title;
         if (description) project.description = description;
         if (category) project.category = category;
         if (price !== undefined) project.price = price;
         if (deliveryTime !== undefined) project.deliveryTime = deliveryTime;
-
-        // If updating a rejected project, clear rejection reason
-        if (project.status === 'rejected') {
-            project.rejectionReason = null;
-        }
+        if (project.status === 'rejected') project.rejectionReason = null;
 
         await project.save();
 
         const updatedProject = await ProjectModel.findById(project._id)
             .populate('owner', 'name email')
-            .populate('reviewedBy', 'name email');
+            .populate('reviewedBy', 'name email')
+            .lean();
 
         res.status(200).json({
             success: true,
             message: "Project updated successfully",
-            data: getSafeProjectObject(updatedProject)
+            data: updatedProject
         });
 
     } catch (err) {
         console.error("UPDATE PROJECT ERROR 👉", err);
 
         if (err.name === "ValidationError") {
-            const messages = Object.values(err.errors).map(val => val.message);
             return res.status(400).json({
                 success: false,
                 message: "Validation failed",
-                errors: messages
+                errors: Object.values(err.errors).map(val => val.message)
             });
         }
 
@@ -311,7 +268,6 @@ export const updateProject = async (req, res) => {
  */
 export const deleteProject = async (req, res) => {
     try {
-        // Validate MongoDB ID
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
             return res.status(400).json({
                 success: false,
@@ -328,7 +284,6 @@ export const deleteProject = async (req, res) => {
             });
         }
 
-        // Authorization check
         const isAdmin = req.user.role === 'admin';
         const isOwner = req.user.id === project.owner.toString();
 
@@ -338,11 +293,6 @@ export const deleteProject = async (req, res) => {
                 message: "Not authorized to delete this project"
             });
         }
-
-        // TODO: Delete associated media files from storage
-        // if (project.media && project.media.length > 0) {
-        //   // Delete files logic here
-        // }
 
         await ProjectModel.findByIdAndDelete(req.params.id);
 
@@ -362,37 +312,24 @@ export const deleteProject = async (req, res) => {
 };
 
 /**
- * @desc    Submit project for review
+ * @desc    Submit project for review  
  * @route   POST /api/projects/:id/submit
  * @access  Private (Owner only)
  */
 export const submitProject = async (req, res) => {
     try {
-        // Validate MongoDB ID
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid project ID"
-            });
+            return res.status(400).json({ success: false, message: "Invalid project ID" });
         }
 
         const project = await ProjectModel.findById(req.params.id);
-
         if (!project) {
-            return res.status(404).json({
-                success: false,
-                message: "Project not found"
-            });
+            return res.status(404).json({ success: false, message: "Project not found" });
         }
 
-        // Authorization check - only owner can submit
-        const isOwner = req.user.id === project.owner.toString();
-
-        if (!isOwner) {
-            return res.status(403).json({
-                success: false,
-                message: "Not authorized to submit this project"
-            });
+        // Authorization: only owner can submit
+        if (req.user.id !== project.owner.toString()) {
+            return res.status(403).json({ success: false, message: "Not authorized to submit this project" });
         }
 
         // Can only submit draft or rejected projects
@@ -403,21 +340,20 @@ export const submitProject = async (req, res) => {
             });
         }
 
-        // Update status to submitted
         project.status = 'submitted';
         project.submittedAt = Date.now();
-        project.rejectionReason = null; // Clear rejection reason if resubmitting
-
+        project.rejectionReason = null;
         await project.save();
 
         const updatedProject = await ProjectModel.findById(project._id)
             .populate('owner', 'name email')
-            .populate('reviewedBy', 'name email');
+            .populate('reviewedBy', 'name email')
+            .lean();
 
         res.status(200).json({
             success: true,
             message: "Project submitted for review successfully",
-            data: getSafeProjectObject(updatedProject)
+            data: updatedProject
         });
 
     } catch (err) {
@@ -437,7 +373,6 @@ export const submitProject = async (req, res) => {
  */
 export const uploadProjectMedia = async (req, res) => {
     try {
-        // Validate MongoDB ID
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
             return res.status(400).json({
                 success: false,
@@ -445,7 +380,6 @@ export const uploadProjectMedia = async (req, res) => {
             });
         }
 
-        // Check if files are uploaded
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({
                 success: false,
@@ -462,7 +396,6 @@ export const uploadProjectMedia = async (req, res) => {
             });
         }
 
-        // Authorization check - only owner can upload media
         const isOwner = req.user.id === project.owner.toString();
 
         if (!isOwner) {
@@ -472,7 +405,6 @@ export const uploadProjectMedia = async (req, res) => {
             });
         }
 
-        // Add new media paths to project
         const newMediaPaths = req.files.map(file => `/uploads/projects/${file.filename}`);
         project.media.push(...newMediaPaths);
 
@@ -506,24 +438,15 @@ export const uploadProjectMedia = async (req, res) => {
  */
 export const approveProject = async (req, res) => {
     try {
-        // Validate MongoDB ID
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid project ID"
-            });
+            return res.status(400).json({ success: false, message: "Invalid project ID" });
         }
 
         const project = await ProjectModel.findById(req.params.id);
-
         if (!project) {
-            return res.status(404).json({
-                success: false,
-                message: "Project not found"
-            });
+            return res.status(404).json({ success: false, message: "Project not found" });
         }
 
-        // Can only approve submitted projects
         if (project.status !== 'submitted') {
             return res.status(400).json({
                 success: false,
@@ -531,22 +454,21 @@ export const approveProject = async (req, res) => {
             });
         }
 
-        // Update status to approved
         project.status = 'approved';
         project.reviewedAt = Date.now();
         project.reviewedBy = req.user.id;
         project.rejectionReason = null;
-
         await project.save();
 
         const updatedProject = await ProjectModel.findById(project._id)
             .populate('owner', 'name email')
-            .populate('reviewedBy', 'name email');
+            .populate('reviewedBy', 'name email')
+            .lean();
 
         res.status(200).json({
             success: true,
             message: "Project approved successfully",
-            data: getSafeProjectObject(updatedProject)
+            data: updatedProject
         });
 
     } catch (err) {
@@ -566,33 +488,20 @@ export const approveProject = async (req, res) => {
  */
 export const rejectProject = async (req, res) => {
     try {
-        // Validate MongoDB ID
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid project ID"
-            });
+            return res.status(400).json({ success: false, message: "Invalid project ID" });
         }
 
         const { reason } = req.body;
-
         if (!reason || reason.trim() === '') {
-            return res.status(400).json({
-                success: false,
-                message: "Rejection reason is required"
-            });
+            return res.status(400).json({ success: false, message: "Rejection reason is required" });
         }
 
         const project = await ProjectModel.findById(req.params.id);
-
         if (!project) {
-            return res.status(404).json({
-                success: false,
-                message: "Project not found"
-            });
+            return res.status(404).json({ success: false, message: "Project not found" });
         }
 
-        // Can only reject submitted projects
         if (project.status !== 'submitted') {
             return res.status(400).json({
                 success: false,
@@ -600,22 +509,21 @@ export const rejectProject = async (req, res) => {
             });
         }
 
-        // Update status to rejected
         project.status = 'rejected';
         project.reviewedAt = Date.now();
         project.reviewedBy = req.user.id;
         project.rejectionReason = reason;
-
         await project.save();
 
         const updatedProject = await ProjectModel.findById(project._id)
             .populate('owner', 'name email')
-            .populate('reviewedBy', 'name email');
+            .populate('reviewedBy', 'name email')
+            .lean();
 
         res.status(200).json({
             success: true,
             message: "Project rejected successfully",
-            data: getSafeProjectObject(updatedProject)
+            data: updatedProject
         });
 
     } catch (err) {
