@@ -61,13 +61,13 @@
             "response": []
         },
         {
-            "name": "2. Process Payment (Requires Token)",
+            "name": "2. Process Payment (Use Test Token)",
             "request": {
                 "method": "POST",
                 "header": [],
                 "body": {
                     "mode": "raw",
-                    "raw": "{\n    \"orderId\": \"{{order_id}}\",\n    \"token\": \"DEMO_TOKEN_123\" \n    // NOTE: In real app, this token comes from Frontend 2Checkout JS SDK\n}",
+                    "raw": "{\n    \"orderId\": \"{{order_id}}\",\n    \"token\": \"9012930219301\" \n    // NOTE: This is a 2Checkout SANDBOX Test Token. It works without Frontend.\n}",
                     "options": {
                         "raw": {
                             "language": "json"
@@ -86,38 +86,6 @@
                     ]
                 },
                 "description": "Step 2: Send Frontend Token + Order ID to charge card."
-            },
-            "response": []
-        },
-        {
-            "name": "3. Simulate Webhook (INS)",
-            "request": {
-                "auth": {
-                    "type": "noauth"
-                },
-                "method": "POST",
-                "header": [],
-                "body": {
-                    "mode": "raw",
-                    "raw": "{\n    \"message_type\": \"INVOICE_STATUS_CHANGED\",\n    \"invoice_status\": \"deposited\",\n    \"sale_id\": \"250505050\",\n    \"vendor_order_id\": \"{{order_id}}\",\n    \"DATE\": \"2026-01-16\"\n}",
-                    "options": {
-                        "raw": {
-                            "language": "json"
-                        }
-                    }
-                },
-                "url": {
-                    "raw": "{{base_url}}/api/payments/ins",
-                    "host": [
-                        "{{base_url}}"
-                    ],
-                    "path": [
-                        "api",
-                        "payments",
-                        "ins"
-                    ]
-                },
-                "description": "Step 3 (Optional): Simulate 2Checkout sending confirmation"
             },
             "response": []
         }

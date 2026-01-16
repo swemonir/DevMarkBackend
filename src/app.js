@@ -20,6 +20,10 @@ import userRoutes from "./app/routes/userRoutes.js";
 import projectRoutes from "./app/routes/projectRoutes.js";
 import marketplaceRoutes from "./app/routes/marketplaceRoutes.js";
 import paymentRoutes, { transactionRouter } from "./app/routes/paymentRoutes.js";
+import analyticsRoutes from "./app/routes/analyticsRoutes.js";
+import notificationRoutes from "./app/routes/notificationRoutes.js";
+import reviewRoutes from "./app/routes/reviewRoutes.js";
+import searchRoutes, { filterRouter } from "./app/routes/searchRoutes.js";
 
 const app = express();
 
@@ -55,6 +59,11 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/marketplace", marketplaceRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/transactions", transactionRouter);
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/search", searchRoutes);
+app.use("/api/filters", filterRouter);
 
 // Debug endpoint
 app.get('/api/debug/verify-token', (req, res) => {
@@ -110,9 +119,7 @@ app.get("/api/test-public", (req, res) => {
     time: new Date().toISOString()
   });
 });
-
-// ========== FIXED 404 HANDLER ==========
-// Remove the problematic line and use this:
+// ========== Remove the problematic line and use this ==========
 app.use((req, res, next) => {
   res.status(404).json({
     success: false,

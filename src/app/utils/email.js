@@ -4,7 +4,7 @@ import nodemailer from "nodemailer";
 const createTransporter = () => {
   // For Gmail
   if (process.env.EMAIL_HOST === "smtp.gmail.com") {
-    return nodemailer.createTransporter({
+    return nodemailer.createTransport({
       service: "gmail",
       auth: {
         user: process.env.EMAIL_USER,
@@ -14,7 +14,7 @@ const createTransporter = () => {
   }
 
   // For other email services
-  return nodemailer.createTransporter({
+  return nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
     port: process.env.EMAIL_PORT || 587,
     secure: process.env.EMAIL_PORT == 465, // true for 465, false for other ports
