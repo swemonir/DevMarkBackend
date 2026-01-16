@@ -1,0 +1,570 @@
+{
+    "info": {
+        "_postman_id": "marketplace-api-collection",
+        "name": "DevMark - Marketplace API",
+        "description": "Complete marketplace API collection for buying/selling approved projects",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{access_token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "item": [
+        {
+            "name": "Public Routes",
+            "item": [
+                {
+                    "name": "Get All Marketplace Listings",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/marketplace?page=1&limit=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "marketplace"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                },
+                                {
+                                    "key": "category",
+                                    "value": "web-development",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "minPrice",
+                                    "value": "1000",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "maxPrice",
+                                    "value": "10000",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "search",
+                                    "value": "ecommerce",
+                                    "disabled": true
+                                }
+                            ]
+                        },
+                        "description": "Browse all available marketplace listings (approved projects for sale)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Search Marketplace Listings",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/marketplace/search?search=website&sortBy=price&order=asc",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "marketplace",
+                                "search"
+                            ],
+                            "query": [
+                                {
+                                    "key": "search",
+                                    "value": "website"
+                                },
+                                {
+                                    "key": "sortBy",
+                                    "value": "price",
+                                    "description": "Options: createdAt, price, title"
+                                },
+                                {
+                                    "key": "order",
+                                    "value": "asc",
+                                    "description": "Options: asc, desc"
+                                },
+                                {
+                                    "key": "category",
+                                    "value": "web-development",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "minPrice",
+                                    "value": "2000",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "maxPrice",
+                                    "value": "8000",
+                                    "disabled": true
+                                }
+                            ]
+                        },
+                        "description": "Advanced search with sorting and filtering"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Single Listing",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/marketplace/{{listing_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "marketplace",
+                                "{{listing_id}}"
+                            ]
+                        },
+                        "description": "Get details of a specific marketplace listing"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Public routes - No authentication required"
+        },
+        {
+            "name": "Seller Routes",
+            "item": [
+                {
+                    "name": "List Project in Marketplace",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.environment.set('listing_id', response.data._id);",
+                                    "    console.log('✅ Listing created with ID:', response.data._id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"projectId\": \"{{project_id}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/marketplace",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "marketplace"
+                            ]
+                        },
+                        "description": "List your approved project in marketplace for sale. Project must be approved first."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Listing",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Updated E-commerce Website with Premium Features\",\n  \"description\": \"Full-stack e-commerce with payment gateway, admin panel, and analytics\",\n  \"price\": 6000,\n  \"deliveryTime\": 40\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/marketplace/{{listing_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "marketplace",
+                                "{{listing_id}}"
+                            ]
+                        },
+                        "description": "Update your marketplace listing (only if not sold)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Remove Listing from Marketplace",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/marketplace/{{listing_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "marketplace",
+                                "{{listing_id}}"
+                            ]
+                        },
+                        "description": "Unlist project from marketplace (project remains, just not for sale)"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Routes for sellers to manage their listings"
+        },
+        {
+            "name": "Buyer Routes",
+            "item": [
+                {
+                    "name": "Buy Project",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/marketplace/{{listing_id}}/buy",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "marketplace",
+                                "{{listing_id}}",
+                                "buy"
+                            ]
+                        },
+                        "description": "Purchase a project from marketplace. No payment integration yet - marks project as sold."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Routes for buyers to purchase projects"
+        },
+        {
+            "name": "Complete Workflow Example",
+            "item": [
+                {
+                    "name": "1. Create Project",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.environment.set('project_id', response.data._id);",
+                                    "    console.log('✅ Step 1: Project created (draft)');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Premium E-commerce Platform\",\n  \"description\": \"Full-featured e-commerce with advanced features\",\n  \"category\": \"web-development\",\n  \"price\": 5000,\n  \"deliveryTime\": 30\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/projects",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "projects"
+                            ]
+                        },
+                        "description": "Step 1: Create project (status: draft)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "2. Submit Project for Review",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    console.log('✅ Step 2: Project submitted for review');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/projects/{{project_id}}/submit",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "projects",
+                                "{{project_id}}",
+                                "submit"
+                            ]
+                        },
+                        "description": "Step 2: Submit for admin review (status: submitted)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "3. Admin Approve Project",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    console.log('✅ Step 3: Project approved by admin');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{admin_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/projects/{{project_id}}/approve",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "projects",
+                                "{{project_id}}",
+                                "approve"
+                            ]
+                        },
+                        "description": "Step 3: Admin approves (status: approved) - Use admin_token!"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "4. List in Marketplace",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.environment.set('listing_id', response.data._id);",
+                                    "    console.log('✅ Step 4: Listed in marketplace');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"projectId\": \"{{project_id}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/marketplace",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "marketplace"
+                            ]
+                        },
+                        "description": "Step 4: List approved project for sale (isForSale: true)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "5. Browse Marketplace",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    console.log('✅ Step 5: Marketplace browsed successfully');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/marketplace",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "marketplace"
+                            ]
+                        },
+                        "description": "Step 5: Public can browse (no auth needed)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "6. Buy Project (Different User)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    console.log('✅ Step 6: Project purchased! Workflow complete!');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{buyer_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/marketplace/{{listing_id}}/buy",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "marketplace",
+                                "{{listing_id}}",
+                                "buy"
+                            ]
+                        },
+                        "description": "Step 6: Buyer purchases (soldTo: buyer, isForSale: false) - Use buyer_token!"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Complete workflow from project creation to purchase"
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:5000",
+            "type": "string"
+        },
+        {
+            "key": "access_token",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "admin_token",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "buyer_token",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "project_id",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "listing_id",
+            "value": "",
+            "type": "string"
+        }
+    ]
+}

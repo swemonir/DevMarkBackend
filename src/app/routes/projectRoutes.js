@@ -13,7 +13,7 @@ import {
     approveProject,
     rejectProject
 } from '../controllers/project.controller.js';
-import { protect, restrictTo } from '../middleware/auth.middleware.js';
+import { protect, restrictTo, optionalProtect } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
@@ -45,8 +45,8 @@ const upload = multer({
 
 /* =================== PUBLIC/OPTIONAL AUTH ROUTES =================== */
 // These routes work with or without authentication
-router.get('/', protect, getAllProjects);
-router.get('/:id', protect, getProjectById);
+router.get('/', optionalProtect, getAllProjects);
+router.get('/:id', optionalProtect, getProjectById);
 
 /* =================== AUTHENTICATED ROUTES =================== */
 // All routes below require authentication

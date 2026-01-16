@@ -83,6 +83,23 @@ const projectSchema = new mongoose.Schema(
             ref: "User",
             default: null,
         },
+
+        // Marketplace fields
+        isForSale: {
+            type: Boolean,
+            default: false,
+        },
+
+        soldTo: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            default: null,
+        },
+
+        soldAt: {
+            type: Date,
+            default: null,
+        },
     },
     {
         timestamps: true,
@@ -100,6 +117,9 @@ projectSchema.index({ createdAt: -1 });
 // Compound index for common queries
 projectSchema.index({ status: 1, createdAt: -1 });
 projectSchema.index({ owner: 1, status: 1 });
+
+// Marketplace index for listing queries  
+projectSchema.index({ status: 1, isForSale: 1, soldTo: 1 });
 
 // Virtual for project age in days
 projectSchema.virtual('ageInDays').get(function () {

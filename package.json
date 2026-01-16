@@ -24,6 +24,7 @@
   "author": "DevMark Team",
   "license": "MIT",
   "dependencies": {
+    "2checkout-node": "^0.0.1",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.8.0",
     "compression": "^1.8.1",

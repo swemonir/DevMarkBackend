@@ -18,6 +18,8 @@ console.log('🔑 JWT_SECRET length:', process.env.JWT_SECRET?.length);
 import authRoutes from "./app/routes/authRoutes.js";
 import userRoutes from "./app/routes/userRoutes.js";
 import projectRoutes from "./app/routes/projectRoutes.js";
+import marketplaceRoutes from "./app/routes/marketplaceRoutes.js";
+import paymentRoutes, { transactionRouter } from "./app/routes/paymentRoutes.js";
 
 const app = express();
 
@@ -50,6 +52,9 @@ app.use(compression());
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/projects", projectRoutes);
+app.use("/api/marketplace", marketplaceRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/transactions", transactionRouter);
 
 // Debug endpoint
 app.get('/api/debug/verify-token', (req, res) => {

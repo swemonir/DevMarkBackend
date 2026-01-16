@@ -1,0 +1,125 @@
+{
+    "info": {
+        "_postman_id": "2checkout-payment-collection",
+        "name": "DevMark - 2Checkout Payment",
+        "description": "Production flow: Create Order -> Token (Frontend) -> Pay -> Webhook",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{buyer_token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "item": [
+        {
+            "name": "1. Create Order",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "if (pm.response.code === 201) {",
+                            "    const response = pm.response.json();",
+                            "    pm.environment.set('order_id', response.data._id);",
+                            "    console.log('✅ Order created! ID:', response.data._id);",
+                            "}"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"projectId\": \"{{listing_id}}\",\n    \"billingDetails\": {\n        \"name\": \"John Buyer\",\n        \"country\": \"USA\",\n        \"city\": \"New York\"\n    }\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "{{base_url}}/api/payments/orders",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "payments",
+                        "orders"
+                    ]
+                },
+                "description": "Step 1: Create an Order on Backend. This secures the price."
+            },
+            "response": []
+        },
+        {
+            "name": "2. Process Payment (Requires Token)",
+            "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"orderId\": \"{{order_id}}\",\n    \"token\": \"DEMO_TOKEN_123\" \n    // NOTE: In real app, this token comes from Frontend 2Checkout JS SDK\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "{{base_url}}/api/payments/pay",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "payments",
+                        "pay"
+                    ]
+                },
+                "description": "Step 2: Send Frontend Token + Order ID to charge card."
+            },
+            "response": []
+        },
+        {
+            "name": "3. Simulate Webhook (INS)",
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"message_type\": \"INVOICE_STATUS_CHANGED\",\n    \"invoice_status\": \"deposited\",\n    \"sale_id\": \"250505050\",\n    \"vendor_order_id\": \"{{order_id}}\",\n    \"DATE\": \"2026-01-16\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "{{base_url}}/api/payments/ins",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "payments",
+                        "ins"
+                    ]
+                },
+                "description": "Step 3 (Optional): Simulate 2Checkout sending confirmation"
+            },
+            "response": []
+        }
+    ]
+}

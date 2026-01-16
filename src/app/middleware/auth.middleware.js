@@ -19,7 +19,6 @@ export const protect = async (req, res, next) => {
       });
     }
 
-    // middleware/auth.middleware.js
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await UserModel.findById(decoded.id);
 
@@ -69,4 +68,42 @@ export const restrictTo = (...roles) => {
     }
     next();
   };
+};
+
+// Optional authentication - allows both public and authenticated access
+export const optionalProtect = async (req, res, next) => {
+  try {
+    let token;
+
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer ")
+    ) {
+      token = req.headers.authorization.split(" ")[1];
+    }
+
+    // If no token, continue as public user
+    if (!token) {
+      return next();
+    }
+
+    // If token exists, try to verify
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await UserModel.findById(decoded.id);
+
+      if (user && !user.isBlocked) {
+        req.user = user; // Set user if valid
+      }
+
+      // Continue regardless (public or authenticated)
+      next();
+    } catch (error) {
+      // Token invalid/expired - continue as public
+      next();
+    }
+  } catch (error) {
+    // Any error - continue as public
+    next();
+  }
 };
