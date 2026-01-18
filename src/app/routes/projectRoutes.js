@@ -11,7 +11,8 @@ import {
     submitProject,
     uploadProjectMedia,
     approveProject,
-    rejectProject
+    rejectProject,
+    getProjectsByStatus
 } from '../controllers/project.controller.js';
 import { protect, restrictTo, optionalProtect } from '../middleware/auth.middleware.js';
 
@@ -25,8 +26,10 @@ const storage = multer.diskStorage({
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         const ext = path.extname(file.originalname);
-        const basename = path.basename(file.originalname, ext);
-        cb(null, `project-${req.params.id}-${basename}-${uniqueSuffix}${ext}`);
+        const basename = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9]/g, '-');
+        // If we don't have an ID yet (create), just use 'new' or omit
+        const prefix = req.params.id ? `project-${req.params.id}` : 'project-new';
+        cb(null, `${prefix}-${basename}-${uniqueSuffix}${ext}`);
     }
 });
 
@@ -46,13 +49,20 @@ const upload = multer({
 /* =================== PUBLIC/OPTIONAL AUTH ROUTES =================== */
 // These routes work with or without authentication
 router.get('/', optionalProtect, getAllProjects);
+router.get('/status/:status', optionalProtect, getProjectsByStatus);
 router.get('/:id', optionalProtect, getProjectById);
 
 /* =================== AUTHENTICATED ROUTES =================== */
 // All routes below require authentication
 router.use(protect);
 
-router.post('/', createProject);
+router.post('/',
+    upload.fields([
+        { name: 'thumbnail', maxCount: 1 },
+        { name: 'screenshots', maxCount: 10 }
+    ]),
+    createProject
+);
 router.put('/:id', updateProject);
 router.delete('/:id', deleteProject);
 router.post('/:id/submit', submitProject);
